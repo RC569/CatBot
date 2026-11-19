@@ -36,9 +36,9 @@ async def sync(ctx: commands.Context) -> None:
 
 @discord.app_commands.allowed_installs(guilds=True, users=True)
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-@bot.hybrid_command(name="echo", description="Echoes a message")
-@app_commands.describe(message="The message to echo")
-async def echo(ctx: commands.Context, message: str):
+@bot.hybrid_command(name="meow", description="Speak as a cat")
+@app_commands.describe(message="thing to say")
+async def meow(ctx: commands.Context, message: str):
     await ctx.send(message)
 
 @discord.app_commands.allowed_installs(guilds=True, users=True)
@@ -50,17 +50,17 @@ async def fm(ctx: commands.Context):
 
 @discord.app_commands.allowed_installs(guilds=True, users=True)
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-@bot.hybrid_command(name="me", description="action")
-@app_commands.describe(action="perform action")
+@bot.hybrid_command(name="me", description="perform action")
+@app_commands.describe(action="thing to do")
 async def me(ctx: commands.Context, action: str):
-    await ctx.send(f"\* <@!{ctx.author.id}> {action}")
+    await ctx.send(f"\\* <@!{ctx.author.id}> {action}")
 
 def get_current_track():
     r = requests.get(koito_base_url + koito_now_playing, headers=KOITO_AUTH_HEADER)
     if r.status_code == 200:
         data = r.json()
         if data["currently_playing"] != True:
-            saythis = "RC is not listening to anything."
+            saythis = "RC is not listening to anything." # make this use <@!{ctx.author.id}> instead of RC
             print(saythis)
             return saythis
         
