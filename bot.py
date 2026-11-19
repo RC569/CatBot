@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from pprint import pprint
+#from pprint import pprint
 
 # Settings
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
