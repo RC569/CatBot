@@ -1,7 +1,8 @@
-`docker build -t catbot ./`
+personal discord bot
 
-`compose.yml`
+build docker image: `docker build -t catbot ./`
 
+## compose.yml
 ```yaml
 services:
     catbot:
@@ -13,5 +14,3 @@ services:
             - KOITO_BASEURL=
         image: catbot:latest
 ```
-
-if using docker to run the bot and koito use `docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' koito` to get the IP for the koito container
