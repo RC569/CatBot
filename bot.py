@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-#from pprint import pprint
+from pprint import pprint
 
 # Settings
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
@@ -45,7 +45,7 @@ async def meow(ctx: commands.Context, message: str):
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @bot.hybrid_command(name="fm", description="/fm for cats")
 async def fm(ctx: commands.Context):
-    saythis = get_current_track()
+    saythis = get_current_track(ctx.author.id)
     await ctx.send(saythis)
 
 @discord.app_commands.allowed_installs(guilds=True, users=True)
@@ -55,12 +55,24 @@ async def fm(ctx: commands.Context):
 async def me(ctx: commands.Context, action: str):
     await ctx.send(f"\\* <@!{ctx.author.id}> {action}")
 
-def get_current_track():
+@discord.app_commands.allowed_installs(guilds=True, users=True)
+@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@bot.hybrid_command(name="embedtest", description="perform action")
+async def embedtest(ctx: commands.Context):
+    title = "Song title"
+    artist = "Artist name"
+    album = "Album name"
+    embed=discord.Embed()
+    embed.set_thumbnail(url="https://placehold.co/500x500.png")
+    embed.add_field(name=f"{title}", value=f"{artist} • {album}", inline=False)
+    await ctx.send(embed=embed)
+
+def get_current_track(author):
     r = requests.get(koito_base_url + koito_now_playing, headers=KOITO_AUTH_HEADER)
     if r.status_code == 200:
         data = r.json()
         if data["currently_playing"] != True:
-            saythis = "RC is not listening to anything." # make this use <@!{ctx.author.id}> instead of RC
+            saythis = f"<@!{author}> is not listening to anything."
             print(saythis)
             return saythis
         
@@ -68,7 +80,7 @@ def get_current_track():
         artist = data["track"]["artists"][0]["name"]
 
         pprint(data)
-        saythis = f"RC is listening to **{title}** by **{artist}**"
+        saythis = f"<@!{author}> is listening to **{title}** by **{artist}**"
         print(saythis)
         return saythis
     else:
