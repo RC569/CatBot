@@ -12,7 +12,7 @@ from pprint import pprint
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
 
 koito_base_url = os.getenv("KOITO_BASEURL")
-koito_now_playing = "/apis/web/v1/now-playing" # todo - change this to just /apis/web/v1/
+koito_api_url = "/apis/web/v1"
 koito_api_key = os.getenv("KOITO_APIKEY")
 KOITO_AUTH_HEADER = {
     "Authorization": f"Token {koito_api_key}"
@@ -45,21 +45,7 @@ async def meow(ctx: commands.Context, message: str):
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @bot.hybrid_command(name="fm", description="/fm for cats")
 async def fm(ctx: commands.Context):
-    saythis = get_current_track(ctx.author.id)
-    await ctx.send(saythis)
-
-@discord.app_commands.allowed_installs(guilds=True, users=True)
-@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-@bot.hybrid_command(name="me", description="perform action")
-@app_commands.describe(action="thing to do")
-async def me(ctx: commands.Context, action: str):
-    await ctx.send(f"\\* <@!{ctx.author.id}> {action}")
-
-@discord.app_commands.allowed_installs(guilds=True, users=True)
-@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
-@bot.hybrid_command(name="embedtest", description="perform action")
-async def embedtest(ctx: commands.Context):
-    is_playing, title, artist, imageurl, = get_current_track(ctx.author.id)
+    is_playing, title, artist, imageurl, = get_current_track() # add a check for if these actually show up
 
     if is_playing != True:
         await ctx.send(f"<@!{ctx.author.id}> is not listening to anything.")
@@ -71,44 +57,35 @@ async def embedtest(ctx: commands.Context):
     embed.add_field(name=f"{title}", value=f"{artist}", inline=False)
     await ctx.send(embed=embed)
 
-def get_current_track(author):
-    r = requests.get(koito_base_url + koito_now_playing, headers=KOITO_AUTH_HEADER)
+@discord.app_commands.allowed_installs(guilds=True, users=True)
+@discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
+@bot.hybrid_command(name="me", description="perform action")
+@app_commands.describe(action="thing to do")
+async def me(ctx: commands.Context, action: str):
+    await ctx.send(f"\\* <@!{ctx.author.id}> {action}")
+
+def get_current_track():
+    r = requests.get(f"{koito_base_url}{koito_api_url}/now-playing", headers=KOITO_AUTH_HEADER)
     if r.status_code == 200:
         data = r.json()
         if data["currently_playing"] != True:
             is_playing = False
-            return is_playing
-        
-        is_playing = True
-        title = data["track"]["title"]
-        artist = data["track"]["artists"][0]["name"]
-        imageurl = koito_base_url + data["track"]["image"]["large"]
-
-        pprint(data)
-        #saythis = f"<@!{author}> is listening to **{title}** by **{artist}**"
-        #print(saythis)
-        return is_playing, title, artist, imageurl
+            title = None # annoying
+            artist = None # annoying
+            imageurl = None # annoying
+            return is_playing, title, artist, imageurl
+        else:
+            is_playing = data["currently_playing"]
+            title = data["track"]["title"]
+            artist = data["track"]["artists"][0]["name"]
+            imageurl = koito_base_url + data["track"]["image"]["large"]
+    
+            pprint(data)
+            return is_playing, title, artist, imageurl
 
     else:
+        print(f"{koito_base_url}{koito_api_url}/now-playing")
+        print(r.status_code)
         print("It's over")
-
-#def get_current_track(author):
-#    r = requests.get(koito_base_url + koito_now_playing, headers=KOITO_AUTH_HEADER)
-#    if r.status_code == 200:
-#        data = r.json()
-#        if data["currently_playing"] != True:
-#            saythis = f"<@!{author}> is not listening to anything."
-#            print(saythis)
-#            return saythis
-#        
-#        title = data["track"]["title"]
-#        artist = data["track"]["artists"][0]["name"]
-#
-#        pprint(data)
-#        saythis = f"<@!{author}> is listening to **{title}** by **{artist}**"
-#        print(saythis)
-#        return saythis
-#    else:
-#        print("It's over")
 
 bot.run(discord_token)
