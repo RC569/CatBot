@@ -12,7 +12,7 @@ from pprint import pprint
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
 
 koito_base_url = os.getenv("KOITO_BASEURL")
-koito_now_playing = "/apis/web/v1/now-playing"
+koito_now_playing = "/apis/web/v1/now-playing" # todo - change this to just /apis/web/v1/
 koito_api_key = os.getenv("KOITO_APIKEY")
 KOITO_AUTH_HEADER = {
     "Authorization": f"Token {koito_api_key}"
@@ -59,12 +59,16 @@ async def me(ctx: commands.Context, action: str):
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @bot.hybrid_command(name="embedtest", description="perform action")
 async def embedtest(ctx: commands.Context):
-    title = "Song title"
-    artist = "Artist name"
-    album = "Album name"
+    is_playing, title, artist, imageurl, = get_current_track(ctx.author.id)
+
+    if is_playing != True:
+        await ctx.send(f"<@!{ctx.author.id}> is not listening to anything.")
+        return
+
     embed=discord.Embed()
-    embed.set_thumbnail(url="https://placehold.co/500x500.png")
-    embed.add_field(name=f"{title}", value=f"{artist} • {album}", inline=False)
+    embed.set_thumbnail(url=imageurl)
+#    embed.add_field(name=f"{title}", value=f"{artist} • {album}", inline=False) # TODO - can be grabbed through /apis/web/v1/album/["track"]["album_id"]
+    embed.add_field(name=f"{title}", value=f"{artist}", inline=False)
     await ctx.send(embed=embed)
 
 def get_current_track(author):
@@ -72,18 +76,39 @@ def get_current_track(author):
     if r.status_code == 200:
         data = r.json()
         if data["currently_playing"] != True:
-            saythis = f"<@!{author}> is not listening to anything."
-            print(saythis)
-            return saythis
+            is_playing = False
+            return is_playing
         
+        is_playing = True
         title = data["track"]["title"]
         artist = data["track"]["artists"][0]["name"]
+        imageurl = koito_base_url + data["track"]["image"]["large"]
 
         pprint(data)
-        saythis = f"<@!{author}> is listening to **{title}** by **{artist}**"
-        print(saythis)
-        return saythis
+        #saythis = f"<@!{author}> is listening to **{title}** by **{artist}**"
+        #print(saythis)
+        return is_playing, title, artist, imageurl
+
     else:
         print("It's over")
+
+#def get_current_track(author):
+#    r = requests.get(koito_base_url + koito_now_playing, headers=KOITO_AUTH_HEADER)
+#    if r.status_code == 200:
+#        data = r.json()
+#        if data["currently_playing"] != True:
+#            saythis = f"<@!{author}> is not listening to anything."
+#            print(saythis)
+#            return saythis
+#        
+#        title = data["track"]["title"]
+#        artist = data["track"]["artists"][0]["name"]
+#
+#        pprint(data)
+#        saythis = f"<@!{author}> is listening to **{title}** by **{artist}**"
+#        print(saythis)
+#        return saythis
+#    else:
+#        print("It's over")
 
 bot.run(discord_token)
