@@ -12,7 +12,7 @@ from pprint import pprint
 discord_token = os.getenv("DISCORD_BOT_TOKEN")
 
 koito_base_url = os.getenv("KOITO_BASEURL")
-koito_api_url = "/apis/web/v1"
+koito_api_url = koito_base_url + "/apis/web/v1"
 koito_api_key = os.getenv("KOITO_APIKEY")
 KOITO_AUTH_HEADER = {
     "Authorization": f"Token {koito_api_key}"
@@ -45,16 +45,18 @@ async def meow(ctx: commands.Context, message: str):
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @bot.hybrid_command(name="fm", description="/fm for cats")
 async def fm(ctx: commands.Context):
-    is_playing, title, artist, imageurl, = get_current_track() # add a check for if these actually show up
+    is_playing, title, artist, albumid, imageurl, = get_current_track() # add a check for if these actually show up
 
     if is_playing != True:
         await ctx.send(f"<@!{ctx.author.id}> is not listening to anything.")
         return
 
-    embed=discord.Embed()
+    #r = requests.get(f"{koito_api_url}/album/{albumid}", headers=KOITO_AUTH_HEADER) # add this and error checks and stuff
+
+    embed=discord.Embed(title=f"{title}")
     embed.set_thumbnail(url=imageurl)
 #    embed.add_field(name=f"{title}", value=f"{artist} • {album}", inline=False) # TODO - can be grabbed through /apis/web/v1/album/["track"]["album_id"]
-    embed.add_field(name=f"{title}", value=f"{artist}", inline=False)
+    embed.add_field(name=f"{artist}", value="", inline=False)
     await ctx.send(embed=embed)
 
 @discord.app_commands.allowed_installs(guilds=True, users=True)
@@ -65,27 +67,30 @@ async def me(ctx: commands.Context, action: str):
     await ctx.send(f"\\* <@!{ctx.author.id}> {action}")
 
 def get_current_track():
-    r = requests.get(f"{koito_base_url}{koito_api_url}/now-playing", headers=KOITO_AUTH_HEADER)
+    r = requests.get(f"{koito_api_url}/now-playing", headers=KOITO_AUTH_HEADER)
     if r.status_code == 200:
         data = r.json()
         if data["currently_playing"] != True:
             is_playing = False
             title = None # annoying
             artist = None # annoying
+            albumid = None # annoying
             imageurl = None # annoying
-            return is_playing, title, artist, imageurl
+            return is_playing, title, artist, albumid, imageurl
         else:
             is_playing = data["currently_playing"]
             title = data["track"]["title"]
             artist = data["track"]["artists"][0]["name"]
+            albumid = data["track"]["album_id"]
             imageurl = koito_base_url + data["track"]["image"]["large"]
     
             pprint(data)
-            return is_playing, title, artist, imageurl
+            return is_playing, title, artist, albumid, imageurl
 
     else:
         print(f"{koito_base_url}{koito_api_url}/now-playing")
         print(r.status_code)
         print("It's over")
+
 
 bot.run(discord_token)
