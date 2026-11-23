@@ -45,8 +45,20 @@ async def meow(ctx: commands.Context, message: str):
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @bot.hybrid_command(name="fm", description="/fm for cats")
 async def fm(ctx: commands.Context):
-    is_playing, title, artist, albumid, imageurl, = get_current_track() # fragile, find a better way to do this
-    # if itsover == True, await ctx.send("it's over")
+    result = get_current_track()
+
+    print(result)
+
+    itsover = result.get("itsover", False)
+    is_playing = result.get("is_playing", False)
+    title = result.get("title", "Unknown title")
+    artist = result.get("artist", "Unknown Artist")
+    albumid = result.get("albumid", "")
+    imageurl = result.get("imageurl", "")
+
+    if itsover == True:
+        await ctx.send(f"[It's over.](https://i.ibb.co/v6sw4cp4/its-over.jpg)")
+        return
 
     if is_playing != True:
         await ctx.send(f"<@!{ctx.author.id}> is not listening to anything.")
@@ -58,7 +70,7 @@ async def fm(ctx: commands.Context):
 
         album = data["title"] # bit messy to have this here instead of get_current_track(), but whatever.
 
-        print(f"album id data\n{data}")
+        print(f"\nalbum id data\n{data}")
         listendata = f"{artist} • {album}"
         if album == None:
             listendata = f"{artist}"
@@ -83,28 +95,21 @@ def get_current_track():
         data = r.json()
         if data["currently_playing"] != True:
             is_playing = False
-            title = None # annoying
-            artist = None # annoying
-            albumid = None # annoying
-            imageurl = None # annoying
-
-            pprint(data)
-            return is_playing, title, artist, albumid, imageurl
+            return locals()
         else:
             is_playing = data["currently_playing"]
             title = data["track"]["title"]
             artist = data["track"]["artists"][0]["name"]
             albumid = data["track"]["album_id"]
             imageurl = koito_base_url + data["track"]["image"]["large"]
-    
-            pprint(data)
-            return is_playing, title, artist, albumid, imageurl
+
+            return locals()
 
     else:
-        print(f"{koito_base_url}{koito_api_url}/now-playing")
+        print(f"{koito_api_url}/now-playing")
         print(r.status_code)
         print("It's over")
-        itsover = None
-        return itsover == True # make the bot send "It's over"
+        itsover = True
+        return locals()
 
 bot.run(discord_token)
