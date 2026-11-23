@@ -45,18 +45,29 @@ async def meow(ctx: commands.Context, message: str):
 @discord.app_commands.allowed_contexts(guilds=True, dms=True, private_channels=True)
 @bot.hybrid_command(name="fm", description="/fm for cats")
 async def fm(ctx: commands.Context):
-    is_playing, title, artist, albumid, imageurl, = get_current_track() # add a check for if these actually show up
+    is_playing, title, artist, albumid, imageurl, = get_current_track() # fragile, find a better way to do this
+    # if itsover == True, await ctx.send("it's over")
 
     if is_playing != True:
         await ctx.send(f"<@!{ctx.author.id}> is not listening to anything.")
         return
 
-    #r = requests.get(f"{koito_api_url}/album/{albumid}", headers=KOITO_AUTH_HEADER) # add this and error checks and stuff
+    if albumid:
+        r = requests.get(f"{koito_api_url}/album/{albumid}", headers=KOITO_AUTH_HEADER)
+        data = r.json()
+
+        album = data["title"] # bit messy to have this here instead of get_current_track(), but whatever.
+
+        print(f"album id data\n{data}")
+        listendata = f"{artist} • {album}"
+        if album == None:
+            listendata = f"{artist}"
+    else:
+        listendata = f"{artist}"
 
     embed=discord.Embed(title=f"{title}")
     embed.set_thumbnail(url=imageurl)
-#    embed.add_field(name=f"{title}", value=f"{artist} • {album}", inline=False) # TODO - can be grabbed through /apis/web/v1/album/["track"]["album_id"]
-    embed.add_field(name=f"{artist}", value="", inline=False)
+    embed.add_field(name=listendata, value="", inline=False)
     await ctx.send(embed=embed)
 
 @discord.app_commands.allowed_installs(guilds=True, users=True)
@@ -76,6 +87,8 @@ def get_current_track():
             artist = None # annoying
             albumid = None # annoying
             imageurl = None # annoying
+
+            pprint(data)
             return is_playing, title, artist, albumid, imageurl
         else:
             is_playing = data["currently_playing"]
@@ -91,6 +104,7 @@ def get_current_track():
         print(f"{koito_base_url}{koito_api_url}/now-playing")
         print(r.status_code)
         print("It's over")
-
+        itsover = None
+        return itsover == True # make the bot send "It's over"
 
 bot.run(discord_token)
